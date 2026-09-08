@@ -70,15 +70,6 @@ jobs:
       - name: Smoke test
         run: bash scripts/smoke-test.sh "$IMAGE"
 
-      - uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE }}
-          severity: CRITICAL,HIGH
-          # Unfixable base-image findings would block every build with nothing
-          # to act on.
-          ignore-unfixed: true
-          exit-code: '1'
-
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}

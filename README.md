@@ -88,7 +88,7 @@ One workflow, `ci.yml`, with two jobs:
 | Job | Runs on | Does |
 |---|---|---|
 | `test` | pull requests and pushes to `main` | ruff, then pytest |
-| `build` | pushes to `main`, and only if `test` passed | build, smoke test, Trivy, push to ECR |
+| `build` | pushes to `main`, and only if `test` passed | build, smoke test, push to ECR |
 
 `needs: test` means nothing reaches ECR past a failing test, on a direct push
 as much as through a pull request. Only the `build` job is granted
@@ -148,8 +148,12 @@ account-specific there is read from Parameter Store by the templates.
 - Schema is created at container start, not by a migration tool.
   Alembic run as a one-off task before deployment is the real answer.
 - The base image is pinned by tag, not digest, so two builds a week apart can
-  differ. Trivy fails the build on any fixable CVE the base carries, which is
-  the practical backstop; pinning the digest is the proper fix.
+  differ. ECR scan-on-push covers the OS packages the base contributes;
+  pinning the digest is the proper fix.
+- Nothing scans the Python dependencies. ECR scan-on-push reads OS packages
+  only, so a CVE in Pillow or Flask surfaces nowhere. Inspector enhanced
+  scanning on the registry is the AWS-side answer; it bills per image and
+  reports after the push instead of blocking it.
 - Dependency versions are pinned and updated by hand. Something like Dependabot
   earns its place once this outlives a single term.
 - Rate limiting is absent. With no accounts, the only upload limits are the

@@ -2,8 +2,8 @@
 
 # Pinned by tag. To pin by digest instead, which makes a build reproducible:
 #   docker buildx imagetools inspect python:3.12-slim
-# Trivy in the build workflow is what catches a stale base image, by failing
-# on any fixable CVE it carries.
+# ECR scan-on-push is what flags a stale base image, though it reports after
+# the push rather than blocking it.
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

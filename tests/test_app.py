@@ -71,6 +71,25 @@ def test_a_renamed_text_file_is_rejected():
         images.process(fake)
 
 
+def test_a_format_we_do_not_accept_is_rejected():
+    """A perfectly valid BMP: the point is that BMPImagePlugin never runs."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (10, 10)).save(buffer, format="BMP")
+    buffer.seek(0)
+    with pytest.raises(images.InvalidImage):
+        images.process(buffer)
+
+
+def test_an_iphone_burst_shot_is_accepted():
+    """MPO is not in the allowlist; the JPEG plugin hands off to it."""
+    frame = Image.new("RGB", (40, 30))
+    buffer = io.BytesIO()
+    frame.save(buffer, format="MPO", append_images=[frame])
+    buffer.seek(0)
+
+    assert images.process(buffer).width == 40
+
+
 def test_exif_orientation_is_applied_then_discarded():
     """Orientation 6 is "rotate 90 clockwise", so landscape in, portrait out.
 

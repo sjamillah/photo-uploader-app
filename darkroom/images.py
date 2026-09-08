@@ -9,8 +9,14 @@ from . import config
 
 Image.MAX_IMAGE_PIXELS = config.MAX_IMAGE_PIXELS
 
-# MPO is what iPhones produce for burst and portrait-mode shots.
-ACCEPTED_FORMATS = {"JPEG", "PNG", "WEBP", "GIF", "MPO"}
+# Passed to Image.open rather than only checked afterwards: Pillow otherwise
+# tries every plugin it has in order to identify the bytes, so a file claiming
+# to be a PSD reaches that decoder before any check of ours runs. Nearly every
+# Pillow advisory is in a format nobody uploads on purpose.
+# MPO, which is what iPhone burst and portrait shots are, has no entry of its
+# own. The JPEG plugin hands off to it once it sees the MPO markers, so listing
+# JPEG covers it and naming MPO here raises KeyError.
+ACCEPTED_FORMATS = ("JPEG", "PNG", "WEBP", "GIF")
 
 
 class InvalidImage(Exception):
@@ -27,17 +33,17 @@ class Rendition:
 
 def process(stream) -> Rendition:
     try:
-        probe = Image.open(stream)
+        probe = Image.open(stream, formats=ACCEPTED_FORMATS)
         probe.verify()
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
-        raise InvalidImage("That file is not an image we can read.") from exc
-
-    if probe.format not in ACCEPTED_FORMATS:
-        raise InvalidImage(f"{probe.format} images are not supported.")
+        raise InvalidImage(
+            "We read JPEG, PNG, WebP and GIF. That file is either damaged or "
+            "in some other format."
+        ) from exc
 
     # verify() leaves the image object unusable, so open it again.
     stream.seek(0)
-    image = Image.open(stream)
+    image = Image.open(stream, formats=ACCEPTED_FORMATS)
 
     # Phones record rotation in EXIF instead of rotating pixels. Skip this and
     # portraits come out sideways.

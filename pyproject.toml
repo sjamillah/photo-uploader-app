@@ -14,7 +14,7 @@ dependencies = [
     "boto3==1.35.36",
     "psycopg[binary]==3.2.3",
     "psycopg-pool==3.2.3",
-    "Pillow==11.0.0",
+    "Pillow==12.3.0",
 ]
 
 # Not installed in the image. CI gets them with: pip install -e ".[dev]"
