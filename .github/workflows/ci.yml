@@ -21,12 +21,13 @@ jobs:
     name: Lint and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-          cache: pip
+          # No pip cache: install-deps.sh passes --no-cache-dir for the image
+          # build, so there is nothing on disk for the post step to save.
 
       - run: bash scripts/install-deps.sh --dev
       - run: ruff check .
@@ -48,12 +49,12 @@ jobs:
       IMAGE: ci-candidate
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -69,7 +70,7 @@ jobs:
       - name: Smoke test
         run: bash scripts/smoke-test.sh "$IMAGE"
 
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}
           severity: CRITICAL,HIGH
@@ -78,7 +79,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: ci-${{ github.run_id }}
