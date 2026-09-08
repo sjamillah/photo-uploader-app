@@ -70,18 +70,6 @@ jobs:
       - name: Smoke test
         run: bash scripts/smoke-test.sh "$IMAGE"
 
-      # TEMPORARY, delete once the role assumes cleanly. Prints the role name
-      # the secret resolves to and the claims GitHub is actually sending, so
-      # they can be compared against the trust policy character by character.
-      - name: What are we sending
-        env:
-          ROLE: ${{ secrets.AWS_ROLE_ARN }}
-        run: |
-          echo "role in the secret: ${ROLE##*/}"
-          echo "account in the secret: $(echo "$ROLE" | cut -d: -f5)"
-          token=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])')
-          python3 -c 'import base64,json,sys; p=sys.argv[1].split(".")[1]; p+="="*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p)); [print(k, "=", repr(c.get(k))) for k in ("sub","aud","repository","repository_owner","ref")]' "$token"
-
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
