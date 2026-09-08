@@ -1,0 +1,12 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        # CodePipeline substitutes the revision it registered from taskdef.json.
+        TaskDefinition: "<TASK_DEFINITION>"
+        LoadBalancerInfo:
+          # Must match the container name and port in the task definition.
+          ContainerName: "app"
+          ContainerPort: 8080
+        PlatformVersion: "LATEST"

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+# Read-only by default; only the job that talks to AWS gets a token.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: bash scripts/install-deps.sh --dev
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest -q
+
+  build:
+    name: Build and push
+    needs: test
+    # Pull requests stop after the tests. The OIDC trust would refuse them
+    # anyway, since it is pinned to main.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      # Local build tag only; the published name comes from the secret.
+      IMAGE: ci-candidate
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}
+          platforms: linux/amd64
+          # Attestations add an unknown/unknown entry to the image index that
+          # confuses ECS and CodeDeploy.
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: bash scripts/smoke-test.sh "$IMAGE"
+
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          severity: CRITICAL,HIGH
+          # Unfixable base-image findings would block every build with nothing
+          # to act on.
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: ci-${{ github.run_id }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Publish
+        run: |
+          bash scripts/publish-image.sh "$IMAGE" \
+            "${{ steps.ecr.outputs.registry }}" \
+            "${{ secrets.ECR_REPOSITORY }}" \
+            "${{ github.sha }}"

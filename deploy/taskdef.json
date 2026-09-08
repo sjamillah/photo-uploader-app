@@ -1,0 +1,62 @@
+{
+  "family": "photo-app",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "2048",
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX",
+    "cpuArchitecture": "X86_64"
+  },
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/photo-app-task-execution",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/photo-app-task",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "<IMAGE1_NAME>",
+      "essential": true,
+      "stopTimeout": 45,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp",
+          "name": "http",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        { "name": "S3_BUCKET", "value": "photo-app-media-ACCOUNT_ID-eu-west-1" },
+        { "name": "CLOUDFRONT_DOMAIN", "value": "dXXXXXXXXXXXXX.cloudfront.net" },
+        { "name": "PORT", "value": "8080" }
+      ],
+      "secrets": [
+        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:host::" },
+        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:port::" },
+        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:dbname::" },
+        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:username::" },
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:password::" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/photo-app",
+          "awslogs-region": "eu-west-1",
+          "awslogs-stream-prefix": "app"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3).status==200 else 1)\""
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "linuxParameters": {
+        "initProcessEnabled": true
+      }
+    }
+  ]
+}

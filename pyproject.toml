@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "darkroom"
+version = "1.0.0"
+description = "A shared wall for photographs"
+requires-python = ">=3.12"
+
+dependencies = [
+    "Flask==3.0.3",
+    "gunicorn==23.0.0",
+    "boto3==1.35.36",
+    "psycopg[binary]==3.2.3",
+    "psycopg-pool==3.2.3",
+    "Pillow==11.0.0",
+]
+
+# Not installed in the image. CI gets them with: pip install -e ".[dev]"
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "ruff==0.7.4",
+]
+
+[tool.setuptools]
+packages = ["darkroom"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["darkroom"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
