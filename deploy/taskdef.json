@@ -1,51 +1,81 @@
 {
-  "family": "photo-app",
-  "requiresCompatibilities": ["FARGATE"],
-  "networkMode": "awsvpc",
-  "cpu": "512",
-  "memory": "2048",
-  "runtimePlatform": {
-    "cpuArchitecture": "X86_64",
-    "operatingSystemFamily": "LINUX"
-  },
-  "taskRoleArn": "arn:aws:iam::697863031884:role/photo-app-task",
-  "executionRoleArn": "arn:aws:iam::697863031884:role/photo-app-task-execution",
   "containerDefinitions": [
     {
       "name": "app",
       "image": "<IMAGE1_NAME>",
-      "essential": true,
+      "cpu": 0,
+      "links": [],
       "portMappings": [
         {
           "containerPort": 8080,
+          "hostPort": 8080,
           "protocol": "tcp",
           "name": "http",
           "appProtocol": "http"
         }
       ],
+      "essential": true,
+      "entryPoint": [],
+      "command": [],
       "environment": [
-        { "name": "PORT", "value": "8080" },
-        { "name": "S3_BUCKET", "value": "photo-app-media-697863031884-eu-north-1" },
-        { "name": "CLOUDFRONT_DOMAIN", "value": "do8diro8atl5e.cloudfront.net" }
+        {
+          "name": "PORT",
+          "value": "8080"
+        },
+        {
+          "name": "S3_BUCKET",
+          "value": "photo-app-media-697863031884-eu-north-1"
+        },
+        {
+          "name": "CLOUDFRONT_DOMAIN",
+          "value": "d291e8uwonpxht.cloudfront.net"
+        }
       ],
+      "environmentFiles": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "linuxParameters": {
+        "devices": [],
+        "initProcessEnabled": true,
+        "tmpfs": []
+      },
       "secrets": [
-        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:host::" },
-        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:port::" },
-        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:dbname::" },
-        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:username::" },
-        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:password::" }
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:host::"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:port::"
+        },
+        {
+          "name": "DB_NAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:dbname::"
+        },
+        {
+          "name": "DB_USER",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:username::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:password::"
+        }
       ],
       "stopTimeout": 45,
-      "linuxParameters": {
-        "initProcessEnabled": true
-      },
+      "dnsServers": [],
+      "dnsSearchDomains": [],
+      "extraHosts": [],
+      "dockerSecurityOptions": [],
+      "dockerLabels": {},
+      "ulimits": [],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/photo-app",
           "awslogs-region": "eu-north-1",
           "awslogs-stream-prefix": "app"
-        }
+        },
+        "secretOptions": []
       },
       "healthCheck": {
         "command": [
@@ -56,7 +86,24 @@
         "timeout": 5,
         "retries": 3,
         "startPeriod": 30
-      }
+      },
+      "systemControls": [],
+      "credentialSpecs": []
     }
-  ]
+  ],
+  "family": "photo-app",
+  "taskRoleArn": "arn:aws:iam::697863031884:role/photo-app-task",
+  "executionRoleArn": "arn:aws:iam::697863031884:role/photo-app-task-execution",
+  "networkMode": "awsvpc",
+  "volumes": [],
+  "placementConstraints": [],
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "2048"
 }
