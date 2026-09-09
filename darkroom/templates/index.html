@@ -61,7 +61,7 @@
 
     <div class="dropzone" id="dropzone">
       <input class="dropzone__input" id="photo" name="photo" type="file"
-             accept="image/jpeg,image/png,image/webp,image/gif" required>
+             accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
       <div class="dropzone__idle">
         <svg viewBox="0 0 24 24" aria-hidden="true" class="dropzone__icon">
           <path d="M4 16.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5"
@@ -70,12 +70,12 @@
                 fill="none" stroke="currentColor" stroke-width="1.6"
                 stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <p class="dropzone__lead">Drop a photo here</p>
+        <p class="dropzone__lead">Drop photos here</p>
         <p class="dropzone__hint">or click to choose &middot; paste works too</p>
       </div>
       <div class="dropzone__preview" id="preview" hidden>
-        <img id="preview-image" alt="">
-        <button type="button" class="chip" id="clear-photo">Choose another</button>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="thumbs__count" id="thumbs-count"></p>
       </div>
     </div>
 

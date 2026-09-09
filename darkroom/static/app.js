@@ -115,12 +115,20 @@ const form = $("composer");
 const fileInput = $("photo");
 const dropzone = $("dropzone");
 const preview = $("preview");
-const previewImage = $("preview-image");
+const thumbs = $("thumbs");
+const thumbsCount = $("thumbs-count");
 const description = $("description");
 const counter = $("counter-value");
 const submit = $("submit");
 const progress = $("progress");
 const progressBar = $("progress-bar");
+
+const MAX_PHOTOS = 8;
+
+// The selection lives here, not in the input, because a file input cannot have
+// one entry removed. The input is kept in step so the form still works with
+// JavaScript off, where it posts the first photograph.
+let chosen = [];
 
 description.addEventListener("input", () => {
   counter.textContent = description.value.length;
@@ -128,24 +136,97 @@ description.addEventListener("input", () => {
     "is-close", description.value.length > cfg.maxDescription - 40);
 });
 
-function showPreview(file) {
-  if (!file) return;
-  if (file.size > cfg.maxBytes) {
-    toast(`That image is larger than ${Math.round(cfg.maxBytes / 1048576)} MB.`, "error");
-    fileInput.value = "";
-    return;
-  }
-  previewImage.src = URL.createObjectURL(file);
-  preview.hidden = false;
-  dropzone.querySelector(".dropzone__idle").hidden = true;
+function syncInput() {
+  const transfer = new DataTransfer();
+  chosen.forEach((file) => transfer.items.add(file));
+  fileInput.files = transfer.files;
 }
 
-fileInput.addEventListener("change", () => showPreview(fileInput.files[0]));
+function renderThumbs() {
+  thumbs.textContent = "";
 
-$("clear-photo").addEventListener("click", () => {
+  chosen.forEach((file, index) => {
+    const tile = document.createElement("div");
+    tile.className = "thumb";
+
+    const image = new Image();
+    image.src = URL.createObjectURL(file);
+    image.alt = file.name;
+    // The object URL is only needed until the browser has decoded it.
+    image.addEventListener("load", () => URL.revokeObjectURL(image.src));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "thumb__remove";
+    remove.title = `Remove ${file.name}`;
+    remove.setAttribute("aria-label", `Remove ${file.name}`);
+    remove.textContent = "×";
+    remove.addEventListener("click", () => {
+      chosen.splice(index, 1);
+      syncInput();
+      renderThumbs();
+    });
+
+    tile.append(image, remove);
+    thumbs.append(tile);
+  });
+
+  if (chosen.length && chosen.length < MAX_PHOTOS) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "thumb thumb--add";
+    add.title = "Add another photograph";
+    add.setAttribute("aria-label", "Add another photograph");
+    add.textContent = "+";
+    add.addEventListener("click", () => fileInput.click());
+    thumbs.append(add);
+  }
+
+  const empty = chosen.length === 0;
+  preview.hidden = empty;
+  dropzone.querySelector(".dropzone__idle").hidden = !empty;
+  thumbsCount.textContent = empty
+    ? ""
+    : `${chosen.length} of ${MAX_PHOTOS} selected`;
+}
+
+function accept(files) {
+  const room = MAX_PHOTOS - chosen.length;
+  if (room <= 0) {
+    toast(`That is ${MAX_PHOTOS} photographs, the most one post takes.`, "error");
+    return;
+  }
+
+  let rejected = 0;
+  [...files]
+    .filter((file) => file.type.startsWith("image/"))
+    // Same name and size twice is the same photograph picked twice.
+    .filter((file) => !chosen.some((had) => had.name === file.name && had.size === file.size))
+    .slice(0, room)
+    .forEach((file) => {
+      if (file.size > cfg.maxBytes) { rejected += 1; return; }
+      chosen.push(file);
+    });
+
+  if (rejected) {
+    toast(`${rejected} skipped, larger than ${Math.round(cfg.maxBytes / 1048576)} MB.`, "error");
+  }
+  syncInput();
+  renderThumbs();
+}
+
+function clearChosen() {
+  chosen = [];
+  syncInput();
+  renderThumbs();
+}
+
+// The input reports everything picked this time round; accept() decides what
+// survives, then syncInput writes the survivors back.
+fileInput.addEventListener("change", () => {
+  const picked = [...fileInput.files];
   fileInput.value = "";
-  preview.hidden = true;
-  dropzone.querySelector(".dropzone__idle").hidden = false;
+  accept(picked);
 });
 
 ["dragenter", "dragover"].forEach((event) =>
@@ -161,74 +242,90 @@ $("clear-photo").addEventListener("click", () => {
   }));
 
 dropzone.addEventListener("drop", (e) => {
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
-  const transfer = new DataTransfer();
-  transfer.items.add(file);
-  fileInput.files = transfer.files;   // keeps the no-JS form path valid
-  showPreview(file);
+  if (e.dataTransfer.files.length) accept(e.dataTransfer.files);
 });
 
 // Paste an image straight from the clipboard - a screenshot, usually.
 document.addEventListener("paste", (e) => {
-  const file = [...(e.clipboardData?.files || [])][0];
-  if (!file || !file.type.startsWith("image/")) return;
-  const transfer = new DataTransfer();
-  transfer.items.add(file);
-  fileInput.files = transfer.files;
-  showPreview(file);
-  toast("Pasted image ready to post.");
+  const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
+  if (!files.length) return;
+  const before = chosen.length;
+  accept(files);
+  if (chosen.length > before) toast("Pasted image ready to post.");
 });
 
-form.addEventListener("submit", (e) => {
-  if (!fileInput.files[0]) return;    // let the browser show its own message
+// XHR rather than fetch: fetch still cannot report upload progress, which
+// matters on a 10 MB photo over a slow connection. One request per photograph,
+// because the API takes one at a time; the description goes with each.
+function postOne(file, index, total) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    const data = new FormData();
+    data.append("photo", file);
+    data.append("description", description.value);
+
+    request.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable) return;
+      const done = (index + event.loaded / event.total) / total;
+      progressBar.style.width = `${done * 100}%`;
+    });
+
+    request.addEventListener("load", () => {
+      let payload = {};
+      try { payload = JSON.parse(request.responseText); } catch { /* non-JSON error page */ }
+      if (request.status === 201 && payload.photo) resolve(payload);
+      else reject(new Error(payload.error || "Upload failed. Please try again."));
+    });
+    request.addEventListener("error", () => reject(new Error("Network error. Please try again.")));
+
+    request.open("POST", form.action);
+    request.setRequestHeader("Accept", "application/json");
+    request.setRequestHeader("X-Requested-With", "fetch");
+    request.send(data);
+  });
+}
+
+form.addEventListener("submit", async (e) => {
+  if (!chosen.length) return;         // let the browser show its own message
   e.preventDefault();
 
-  // XHR rather than fetch: fetch still cannot report upload progress, which
-  // matters on a 10 MB photo over a slow connection.
-  const request = new XMLHttpRequest();
-  const data = new FormData(form);
+  const queue = [...chosen];
+  const total = queue.length;
+  let posted = 0;
 
   submit.disabled = true;
-  submit.textContent = "Posting...";
   progress.hidden = false;
 
-  request.upload.addEventListener("progress", (event) => {
-    if (event.lengthComputable) {
-      progressBar.style.width = `${(event.loaded / event.total) * 100}%`;
-    }
-  });
-
-  request.addEventListener("load", () => {
-    let payload = {};
-    try { payload = JSON.parse(request.responseText); } catch { /* non-JSON error page */ }
-
-    if (request.status === 201 && payload.photo) {
+  for (const [index, file] of queue.entries()) {
+    submit.textContent = total > 1 ? `Posting ${index + 1} of ${total}...` : "Posting...";
+    try {
+      const payload = await postOne(file, index, total);
       rememberToken(payload.photo.id, payload.manageToken);
       const card = buildCard(payload.photo);
       grid.prepend(card);
       markOwned(card);
       empty.hidden = true;
       $("photo-count").textContent = Number($("photo-count").textContent) + 1;
-      form.reset();
-      $("clear-photo").click();
-      counter.textContent = "0";
-      toast("Posted to the wall.");
-    } else {
-      toast(payload.error || "Upload failed. Please try again.", "error");
+      posted += 1;
+      // Drop it from the selection as it lands, so a failure part way through
+      // leaves exactly the photographs that still need posting.
+      chosen = chosen.filter((pending) => pending !== file);
+    } catch (error) {
+      toast(error.message, "error");
     }
-    resetComposer();
-  });
+  }
 
-  request.addEventListener("error", () => {
-    toast("Network error. Please try again.", "error");
-    resetComposer();
-  });
+  syncInput();
+  renderThumbs();
 
-  request.open("POST", form.action);
-  request.setRequestHeader("Accept", "application/json");
-  request.setRequestHeader("X-Requested-With", "fetch");
-  request.send(data);
+  if (posted) {
+    toast(posted === 1 ? "Posted to the wall." : `Posted ${posted} photographs.`);
+    if (!chosen.length) {
+      description.value = "";
+      counter.textContent = "0";
+    }
+  }
+  resetComposer();
 });
 
 function resetComposer() {
