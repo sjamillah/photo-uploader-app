@@ -55,6 +55,11 @@
 /* No image, anywhere, wider than what holds it. */
 img { max-width: 100%; }
 
+/* The browser hides [hidden] with a display rule of its own, and any author
+   display rule beats it. Several things here set display and are toggled by
+   the attribute, so without this they never hide. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--ground);
@@ -448,7 +453,6 @@ textarea:focus { border-color: var(--line-strong); }
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
-.lightbox[hidden] { display: none; }
 
 .lightbox__figure {
   margin: 0; display: flex; flex-direction: column; gap: 12px;

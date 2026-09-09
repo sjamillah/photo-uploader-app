@@ -111,7 +111,7 @@ Two GitHub settings are required:
 | Secret | Value |
 |---|---|
 | `AWS_ROLE_ARN` | `GitHubAppRoleArn` from the bootstrap stack |
-| `AWS_REGION` | `eu-west-1` |
+| `AWS_REGION` | `eu-north-1` |
 | `ECR_REPOSITORY` | `photo-app` |
 
 There are no AWS access keys anywhere. The workflow authenticates with OIDC,

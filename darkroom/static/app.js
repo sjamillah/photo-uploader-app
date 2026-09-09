@@ -182,10 +182,12 @@ function renderThumbs() {
     thumbs.append(add);
   }
 
-  const empty = chosen.length === 0;
-  preview.hidden = empty;
-  dropzone.querySelector(".dropzone__idle").hidden = !empty;
-  thumbsCount.textContent = empty
+  // Not named empty: that is the empty-state element at module scope, and
+  // shadowing it here would be a quiet way to break the wall's own message.
+  const nothingChosen = chosen.length === 0;
+  preview.hidden = nothingChosen;
+  dropzone.querySelector(".dropzone__idle").hidden = !nothingChosen;
+  thumbsCount.textContent = nothingChosen
     ? ""
     : `${chosen.length} of ${MAX_PHOTOS} selected`;
 }

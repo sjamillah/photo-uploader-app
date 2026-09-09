@@ -25,15 +25,15 @@
       ],
       "environment": [
         { "name": "PORT", "value": "8080" },
-        { "name": "S3_BUCKET", "value": "photo-app-media-697863031884-eu-west-1" },
+        { "name": "S3_BUCKET", "value": "photo-app-media-697863031884-eu-north-1" },
         { "name": "CLOUDFRONT_DOMAIN", "value": "do8diro8atl5e.cloudfront.net" }
       ],
       "secrets": [
-        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:host::" },
-        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:port::" },
-        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:dbname::" },
-        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:username::" },
-        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:password::" }
+        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:host::" },
+        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:port::" },
+        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:dbname::" },
+        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:username::" },
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-SUiqO4:password::" }
       ],
       "stopTimeout": 45,
       "linuxParameters": {
@@ -43,7 +43,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/photo-app",
-          "awslogs-region": "eu-west-1",
+          "awslogs-region": "eu-north-1",
           "awslogs-stream-prefix": "app"
         }
       },
