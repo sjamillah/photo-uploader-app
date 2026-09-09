@@ -210,7 +210,7 @@ if not config.SKIP_DB_BOOTSTRAP:
         db.init_schema()
     except Exception:
         # Staying up keeps /health passing, so this shows in CloudWatch
-        # instead of as tasks cycling forever.
+        # instead of tasks cycling forever.
         log.exception("schema bootstrap failed, continuing in degraded mode")
 
 
