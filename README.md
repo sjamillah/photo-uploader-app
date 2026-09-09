@@ -119,8 +119,12 @@ and the role trusts only this repository on `main`.
 
 ### Regenerating `deploy/taskdef.json`
 
-The committed file has `ACCOUNT_ID` and `XXXXXX` placeholders so the shape is
-reviewable. Once the service stack exists, replace it with the real thing:
+The committed file carries the real role ARNs, bucket name, CloudFront domain
+and secret ARN, because CodeDeploy reads a complete task definition from the
+pipeline's source artifact and substitutes nothing but `<IMAGE1_NAME>`.
+
+If the stack is rebuilt, those values change and the file has to be rewritten
+from whatever ECS registered:
 
 ```bash
 bash scripts/update-taskdef.sh photo-app
@@ -132,15 +136,15 @@ fail inside the pipeline, one field per attempt.
 
 ## A note on what is committed
 
-Nothing in this repo carries an AWS account id except `deploy/taskdef.json`,
-and that one is unavoidable: CodeDeploy reads a complete task definition from
-the pipeline's source artifact, and a complete task definition names role and
-secret ARNs. The committed copy has `ACCOUNT_ID` placeholders so the shape is
-reviewable; the real one appears when you run `scripts/update-taskdef.sh`.
+An AWS account id appears in `deploy/taskdef.json` and nowhere else. It is not
+a credential: it is in every ARN in the console, and the ARN of a secret is not
+the secret. Reading the value needs `secretsmanager:GetSecretValue`, which only
+`photo-app-task-execution` holds.
 
-If that matters for your account, the options are to keep this repository
-private, or to add a CodeBuild step that renders the file from Parameter Store
-at deploy time. The infrastructure repository has no such file: everything
+The alternative is a CodeBuild stage that renders the file inside the pipeline.
+That removes the account id from this repository and makes `ecs.yaml` the only
+description of the task definition, at the cost of a component the brief does
+not ask for. The infrastructure repository needs neither: everything
 account-specific there is read from Parameter Store by the templates.
 
 ## Known gaps
@@ -154,6 +158,11 @@ account-specific there is read from Parameter Store by the templates.
   only, so a CVE in Pillow or Flask surfaces nowhere. Inspector enhanced
   scanning on the registry is the AWS-side answer; it bills per image and
   reports after the push instead of blocking it.
+- `deploy/taskdef.json` and `ecs.yaml` describe the same task definition in
+  two repositories. Change cpu, memory, an environment variable or the port
+  in one and the other silently disagrees: the stack keeps reporting the old
+  values while deployments run the new ones. Change both, or move to the
+  CodeBuild render described above.
 - Dependency versions are pinned and updated by hand. Something like Dependabot
   earns its place once this outlives a single term.
 - Rate limiting is absent. With no accounts, the only upload limits are the

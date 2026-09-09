@@ -5,17 +5,16 @@
   "cpu": "512",
   "memory": "2048",
   "runtimePlatform": {
-    "operatingSystemFamily": "LINUX",
-    "cpuArchitecture": "X86_64"
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
   },
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/photo-app-task-execution",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/photo-app-task",
+  "taskRoleArn": "arn:aws:iam::697863031884:role/photo-app-task",
+  "executionRoleArn": "arn:aws:iam::697863031884:role/photo-app-task-execution",
   "containerDefinitions": [
     {
       "name": "app",
       "image": "<IMAGE1_NAME>",
       "essential": true,
-      "stopTimeout": 45,
       "portMappings": [
         {
           "containerPort": 8080,
@@ -25,17 +24,21 @@
         }
       ],
       "environment": [
-        { "name": "S3_BUCKET", "value": "photo-app-media-ACCOUNT_ID-eu-west-1" },
-        { "name": "CLOUDFRONT_DOMAIN", "value": "dXXXXXXXXXXXXX.cloudfront.net" },
-        { "name": "PORT", "value": "8080" }
+        { "name": "PORT", "value": "8080" },
+        { "name": "S3_BUCKET", "value": "photo-app-media-697863031884-eu-west-1" },
+        { "name": "CLOUDFRONT_DOMAIN", "value": "do8diro8atl5e.cloudfront.net" }
       ],
       "secrets": [
-        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:host::" },
-        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:port::" },
-        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:dbname::" },
-        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:username::" },
-        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:photo-app/db-XXXXXX:password::" }
+        { "name": "DB_HOST", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:host::" },
+        { "name": "DB_PORT", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:port::" },
+        { "name": "DB_NAME", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:dbname::" },
+        { "name": "DB_USER", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:username::" },
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:eu-west-1:697863031884:secret:photo-app/db-SUiqO4:password::" }
       ],
+      "stopTimeout": 45,
+      "linuxParameters": {
+        "initProcessEnabled": true
+      },
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -53,9 +56,6 @@
         "timeout": 5,
         "retries": 3,
         "startPeriod": 30
-      },
-      "linuxParameters": {
-        "initProcessEnabled": true
       }
     }
   ]
