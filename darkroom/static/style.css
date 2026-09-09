@@ -16,6 +16,13 @@
   --safelight-wash: rgba(232, 129, 74, .13);
   --danger:        #E4666B;
   --ok:            #5FBF8B;
+  --font-display:  'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-body:     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+                   'Helvetica Neue', Arial, sans-serif;
+  /* Contact sheets are annotated in typewriter. Dates, counts and sizes
+     use it here for the same reason: they are notes about a photograph,
+     not part of it. */
+  --font-mono:     'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius:        12px;
   --radius-sm:     7px;
   --shadow:        0 1px 2px rgba(0,0,0,.45), 0 12px 32px -14px rgba(0,0,0,.7);
@@ -49,8 +56,9 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body);
+  /* Film grain, low enough to feel like paper rather than noise. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -85,16 +93,26 @@ body {
 
 .masthead h1 {
   margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -.02em;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1.05;
 }
 
-.masthead__tagline { margin: 0; font-size: 12.5px; color: var(--ink-faint); }
+.masthead__tagline {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
 
 .masthead__count {
   margin: 0;
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--ink-dim);
   font-variant-numeric: tabular-nums;
 }
@@ -214,7 +232,8 @@ textarea:focus { border-color: var(--line-strong); }
   background: var(--safelight);
   color: #14100C;
   border: none; border-radius: 100px;
-  font: inherit; font-weight: 600; font-size: 14px;
+  font-family: var(--font-display);
+  font-weight: 800; font-size: 14px; letter-spacing: -.01em;
   cursor: pointer;
   transition: background .15s, transform .06s;
 }
@@ -232,13 +251,19 @@ textarea:focus { border-color: var(--line-strong); }
   transition: width .12s linear;
 }
 
-.composer__note { margin: 0; font-size: 12px; color: var(--ink-faint); }
+.composer__note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .01em;
+  color: var(--ink-faint);
+}
 
 /* ----------------------------------------------------------------- grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
 
 .card {
@@ -249,7 +274,7 @@ textarea:focus { border-color: var(--line-strong); }
   overflow: hidden;
   transition: border-color .15s, transform .15s;
 }
-.card:hover { border-color: var(--line-strong); }
+.card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
 .card.is-new { animation: settle .35s ease-out; }
 
 @keyframes settle {
@@ -258,14 +283,18 @@ textarea:focus { border-color: var(--line-strong); }
 }
 
 .card__open {
-  display: block; width: 100%; padding: 0; border: 0; cursor: zoom-in;
-  background: var(--raised); line-height: 0;
+  /* The cell holds the ratio, not the image. The img carries width and height
+     attributes from the photo's real dimensions, and on the same element those
+     win over aspect-ratio, which is how a portrait shot ends up metres tall. */
+  display: block; width: 100%; aspect-ratio: 4 / 3;
+  padding: 0; border: 0; cursor: zoom-in;
+  background: var(--raised); line-height: 0; overflow: hidden;
 }
 .card__open img {
-  /* A fixed cell keeps the feed's reading order intact and stops the grid
-     reflowing as images load. The lightbox shows the real proportions. */
-  width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .4s ease;
 }
+.card:hover .card__open img { transform: scale(1.03); }
 
 .card__meta { padding: 10px 12px 12px; }
 .card__caption {
@@ -273,7 +302,10 @@ textarea:focus { border-color: var(--line-strong); }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.card__meta time { font-size: 11.5px; color: var(--ink-faint); }
+.card__meta time {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: .02em; color: var(--ink-faint);
+}
 
 .card__delete {
   position: absolute; top: 8px; right: 8px;
