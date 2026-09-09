@@ -455,6 +455,12 @@ textarea:focus { border-color: var(--line-strong); }
   align-items: center; max-width: min(1100px, 100%);
 }
 .lightbox__figure img {
+  /* width and height auto are load-bearing. The element carries the
+     photograph's real pixel dimensions as attributes, so that the browser can
+     reserve the right shape before the file arrives. Without auto here, the
+     two max rules clamp width and height independently and the picture is
+     stretched to whatever box that leaves. */
+  width: auto; height: auto;
   max-width: 100%; max-height: 78vh;
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
