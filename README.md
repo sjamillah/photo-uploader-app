@@ -106,11 +106,11 @@ The `build` job tags the image with the commit SHA, records its digest at
 what fires the EventBridge rule, so by the time anything reacts the digest is
 already recorded.
 
-Two GitHub settings are required:
+Three repository secrets are required:
 
 | Secret | Value |
 |---|---|
-| `AWS_ROLE_ARN` | `GitHubAppRoleArn` from the bootstrap stack |
+| `AWS_ROLE_ARN` | `GitHubAppRoleArn`, an output of the `photo-app-main` stack |
 | `AWS_REGION` | `eu-north-1` |
 | `ECR_REPOSITORY` | `photo-app` |
 
@@ -123,16 +123,85 @@ The committed file carries the real role ARNs, bucket name, CloudFront domain
 and secret ARN, because CodeDeploy reads a complete task definition from the
 pipeline's source artifact and substitutes nothing but `<IMAGE1_NAME>`.
 
-If the stack is rebuilt, those values change and the file has to be rewritten
-from whatever ECS registered:
+**Rebuilding the database stack invalidates it.** Secrets Manager mints a new
+random ARN suffix on every create, so the committed file names a secret that no
+longer exists. Tasks then fail to start with:
 
-```bash
-bash scripts/update-taskdef.sh photo-app
+```
+ResourceInitializationError: unable to pull secrets or registry auth:
+... AccessDeniedException ... not authorized to perform: secretsmanager:GetSecretValue
 ```
 
-That strips the server-generated fields and restores the `<IMAGE1_NAME>`
-placeholder. Leaving any of those fields in makes `RegisterTaskDefinition`
-fail inside the pipeline, one field per attempt.
+That is *AccessDenied* rather than *NotFound* because the execution role's
+policy is scoped to the real secret, so a stale ARN falls outside it. The
+CodeDeploy deployment sits at step 1, "Deploying replacement task set", at 50%
+until it times out.
+
+Regenerate from what CloudFormation registered:
+
+```bash
+R=eu-north-1
+
+# the task definition currently serving traffic, not the latest revision -
+# the latest is the broken one the pipeline just registered from this file
+TD=$(aws ecs describe-services --cluster photo-app-cluster --services photo-app-service --region $R \
+  --query 'services[0].taskSets[?status==`PRIMARY`]|[0].taskDefinition' --output text)
+
+aws ecs describe-task-definition --task-definition "$TD" --region $R --query taskDefinition --output json \
+| python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for k in ('taskDefinitionArn','revision','status','requiresAttributes','compatibilities','registeredAt','registeredBy','deregisteredAt'):
+    d.pop(k, None)
+d['containerDefinitions'][0]['image'] = '<IMAGE1_NAME>'
+json.dump(d, open('deploy/taskdef.json','w'), indent=2)
+print('secret:', d['containerDefinitions'][0]['secrets'][0]['valueFrom'])
+"
+
+git diff deploy/taskdef.json
+```
+
+Stripping those server-generated fields is not optional — leaving any of them in
+makes `RegisterTaskDefinition` fail inside the pipeline, one field per attempt.
+
+**Then start a pipeline run by hand.** `pipeline.yaml` sets
+`DetectChanges: false` on the GitHub source, so only an image push starts a
+deployment. Committing this file deploys nothing on its own:
+
+```bash
+aws codepipeline start-pipeline-execution --name photo-app-pipeline --region $R
+```
+
+Do not use the retry arrow on the failed stage — it replays the same source
+revision, which is the file you just fixed.
+
+If a deployment is still stuck when you start, stop it first so the two do not
+overlap:
+
+```bash
+DEP=$(aws deploy list-deployments --application-name photo-app-app \
+  --deployment-group-name photo-app-dg --region $R \
+  --include-only-statuses InProgress --query 'deployments[0]' --output text)
+aws deploy stop-deployment --deployment-id "$DEP" --auto-rollback-enabled --region $R
+```
+
+### Diagnosing a stuck deployment
+
+```bash
+aws ecs describe-tasks --cluster photo-app-cluster --region $R \
+  --tasks $(aws ecs list-tasks --cluster photo-app-cluster --desired-status STOPPED --region $R --query 'taskArns[]' --output text) \
+  --query 'tasks[].{stopped:stoppedReason,container:containers[0].reason}' --output json
+```
+
+| Message | Cause |
+|---|---|
+| `unable to pull secrets` | stale secret ARN — regenerate this file |
+| `unable to pull image` | no route to ECR; check the `ecr.api` and `ecr.dkr` endpoints |
+| `Task failed ELB health checks` | container is up but `/health` is not answering on 8080 |
+| `Essential container in task exited` | the app is crashing; read `/ecs/photo-app` |
+
+The cluster is `photo-app-cluster` and the service `photo-app-service`; the task
+definition family and log group are both plain `photo-app`.
 
 ## A note on what is committed
 
@@ -142,9 +211,10 @@ the secret. Reading the value needs `secretsmanager:GetSecretValue`, which only
 `photo-app-task-execution` holds.
 
 The alternative is a CodeBuild stage that renders the file inside the pipeline.
-That removes the account id from this repository and makes `ecs.yaml` the only
-description of the task definition, at the cost of a component the brief does
-not ask for. The infrastructure repository needs neither: everything
+That removes the account id from this repository, makes the infra repo's
+`templates/service.yaml` the only description of the task definition, and ends
+the regeneration dance above — at the cost of a component the brief does not
+ask for. The infrastructure repository needs neither: everything
 account-specific there is read from Parameter Store by the templates.
 
 ## Known gaps
@@ -158,11 +228,11 @@ account-specific there is read from Parameter Store by the templates.
   only, so a CVE in Pillow or Flask surfaces nowhere. Inspector enhanced
   scanning on the registry is the AWS-side answer; it bills per image and
   reports after the push instead of blocking it.
-- `deploy/taskdef.json` and `ecs.yaml` describe the same task definition in
-  two repositories. Change cpu, memory, an environment variable or the port
-  in one and the other silently disagrees: the stack keeps reporting the old
-  values while deployments run the new ones. Change both, or move to the
-  CodeBuild render described above.
+- `deploy/taskdef.json` and the infra repo's `templates/service.yaml` describe
+  the same task definition in two repositories. Change cpu, memory, an
+  environment variable or the port in one and the other silently disagrees: the
+  stack keeps reporting the old values while deployments run the new ones.
+  Change both, or move to the CodeBuild render described above.
 - Dependency versions are pinned and updated by hand. Something like Dependabot
   earns its place once this outlives a single term.
 - Rate limiting is absent. With no accounts, the only upload limits are the
