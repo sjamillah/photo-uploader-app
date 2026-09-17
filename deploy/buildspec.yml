@@ -1,0 +1,14 @@
+version: 0.2
+
+# The Render stage of the pipeline. Its only input is PROJECT, set by
+# pipeline.yaml; every name in the task definition derives from that, and the
+# one value that cannot be derived is read from Parameter Store.
+phases:
+  build:
+    commands:
+      - python3 deploy/render_taskdef.py
+
+artifacts:
+  files:
+    - deploy/taskdef.json
+    - deploy/appspec.yaml

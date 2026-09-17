@@ -1,0 +1,91 @@
+{
+  "family": "${PROJECT}",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "2048",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "taskRoleArn": "arn:aws:iam::${ACCOUNT}:role/${PROJECT}-task",
+  "executionRoleArn": "arn:aws:iam::${ACCOUNT}:role/${PROJECT}-task-execution",
+  "volumes": [],
+  "placementConstraints": [],
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "<IMAGE1_NAME>",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp",
+          "name": "http",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "8080"
+        },
+        {
+          "name": "S3_BUCKET",
+          "value": "${PROJECT}-media-${ACCOUNT}-${REGION}"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "CLOUDFRONT_DOMAIN",
+          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/cdn/domain"
+        },
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/host"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/port"
+        },
+        {
+          "name": "DB_NAME",
+          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/name"
+        },
+        {
+          "name": "DB_USER",
+          "valueFrom": "${DB_SECRET_ARN}:username::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "${DB_SECRET_ARN}:password::"
+        }
+      ],
+      "stopTimeout": 45,
+      "linuxParameters": {
+        "initProcessEnabled": true
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/${PROJECT}",
+          "awslogs-region": "${REGION}",
+          "awslogs-stream-prefix": "app"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3).status==200 else 1)\""
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ]
+}

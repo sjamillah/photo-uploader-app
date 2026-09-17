@@ -42,6 +42,8 @@ known-first-party = ["darkroom"]
 "tests/*" = ["E402"]
 # Driving the docker CLI is the point of this module.
 "tests/test_image.py" = ["S603", "S607"]
+# Shelling out to the AWS CLI is the point of this module.
+"deploy/render_taskdef.py" = ["S603", "S607"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

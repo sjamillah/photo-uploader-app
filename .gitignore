@@ -8,3 +8,6 @@ venv/
 .pytest_cache/
 .ruff_cache/
 .env
+
+# Rendered by deploy/render_taskdef.py in the pipeline.
+deploy/taskdef.json
