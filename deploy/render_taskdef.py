@@ -34,22 +34,33 @@ PARAMETERS = {
 
 
 def aws(*args: str) -> str:
-    result = subprocess.run(["aws", *args], check=True, capture_output=True, text=True)
+    result = subprocess.run(["aws", *args], capture_output=True, text=True)
+    if result.returncode != 0:
+        # Without this the build reports only "exit status 1" and the reason
+        # AWS gave is invisible, because capture_output swallows stderr.
+        sys.exit(f"aws {' '.join(args)} failed ({result.returncode}): {result.stderr.strip()}")
     return result.stdout.strip()
+
+
+def parameter(name: str) -> str:
+    # get-parameter, not get-parameters: the plural form is a separate IAM
+    # action and the render role is granted only ssm:GetParameter.
+    return aws(
+        "ssm",
+        "get-parameter",
+        "--name",
+        name,
+        "--query",
+        "Parameter.Value",
+        "--output",
+        "text",
+    )
 
 
 def resolve() -> dict[str, str]:
     project = os.environ["PROJECT"]
-    names = [f"/{project}/{suffix}" for suffix in PARAMETERS]
 
-    payload = json.loads(aws("ssm", "get-parameters", "--names", *names, "--output", "json"))
-    # A silently missing parameter would render an empty value into the task
-    # definition, so refuse rather than deploy a half-configured container.
-    if payload.get("InvalidParameters"):
-        raise SystemExit(f"missing parameters: {', '.join(payload['InvalidParameters'])}")
-
-    found = {p["Name"]: p["Value"] for p in payload["Parameters"]}
-    values = {token: found[f"/{project}/{suffix}"] for suffix, token in PARAMETERS.items()}
+    values = {token: parameter(f"/{project}/{suffix}") for suffix, token in PARAMETERS.items()}
     values["PROJECT"] = project
     values["REGION"] = os.environ.get("AWS_REGION") or os.environ["AWS_DEFAULT_REGION"]
     values["ACCOUNT"] = aws("sts", "get-caller-identity", "--query", "Account", "--output", "text")
