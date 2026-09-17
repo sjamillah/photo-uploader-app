@@ -11,7 +11,7 @@ in [photo-uploader-infra](https://github.com/sjamillah/photo-uploader-infra).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
-bash scripts/install-deps.sh --dev
+pip install -e ".[dev]"
 
 docker run -d --name darkroom-db -p 5432:5432 \
   -e POSTGRES_PASSWORD=local -e POSTGRES_DB=photos postgres:16
@@ -44,7 +44,6 @@ ruff format --check .
 | `darkroom/templates/`, `darkroom/static/` | The interface. No framework, no build step |
 | `tests/` | Unit tests. Each one pins a decision worth not losing |
 | `deploy/` | `appspec.yaml` and `taskdef.json` for CodeDeploy |
-| `scripts/` | What the workflows run, so they stay readable and you can run them by hand |
 
 No module outside `config.py` reads `os.environ`, and the object key layout is
 written once, in `storage.object_key`. Both are enforced by a test.
@@ -94,17 +93,13 @@ One workflow, `ci.yml`, with two jobs:
 as much as through a pull request. Only the `build` job is granted
 `id-token: write`; the workflow is read-only otherwise.
 
-Each build step is one line calling a script in `scripts/`, so the workflow
-stays readable and any step can be run by hand while debugging:
+The smoke test starts the built image and waits for `/health`, which is
+deliberately shallow so it needs no database and no AWS. It also asserts the
+container is not running as root.
 
-```bash
-bash scripts/smoke-test.sh ci-candidate
-```
-
-The `build` job tags the image with the commit SHA, records its digest at
-`/photo-app/image/current`, and only then moves `latest`. That last push is
-what fires the EventBridge rule, so by the time anything reacts the digest is
-already recorded.
+The `build` job pushes one tag, `latest`, and that push is what fires the
+EventBridge rule. The commit travels inside the image as an OCI label, so a
+digest is still traceable without a second tag cluttering the registry.
 
 Three repository secrets are required:
 

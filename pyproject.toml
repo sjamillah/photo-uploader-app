@@ -40,6 +40,8 @@ known-first-party = ["darkroom"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402"]
+# Driving the docker CLI is the point of this module.
+"tests/test_image.py" = ["S603", "S607"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

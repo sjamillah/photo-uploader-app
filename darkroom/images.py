@@ -9,13 +9,8 @@ from . import config
 
 Image.MAX_IMAGE_PIXELS = config.MAX_IMAGE_PIXELS
 
-# Passed to Image.open rather than only checked afterwards: Pillow otherwise
-# tries every plugin it has in order to identify the bytes, so a file claiming
-# to be a PSD reaches that decoder before any check of ours runs. Nearly every
-# Pillow advisory is in a format nobody uploads on purpose.
-# MPO, which is what iPhone burst and portrait shots are, has no entry of its
-# own. The JPEG plugin hands off to it once it sees the MPO markers, so listing
-# JPEG covers it and naming MPO here raises KeyError.
+# Passed to Image.open, not just checked after, or Pillow tries every plugin to
+# identify the bytes. JPEG also covers MPO, which is what iPhone bursts are.
 ACCEPTED_FORMATS = ("JPEG", "PNG", "WEBP", "GIF")
 
 
