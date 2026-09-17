@@ -36,25 +36,25 @@
         {
           "name": "S3_BUCKET",
           "value": "${PROJECT}-media-${ACCOUNT}-${REGION}"
-        }
-      ],
-      "secrets": [
+        },
         {
           "name": "CLOUDFRONT_DOMAIN",
-          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/cdn/domain"
+          "value": "${CDN_DOMAIN}"
         },
         {
           "name": "DB_HOST",
-          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/host"
+          "value": "${DB_HOST}"
         },
         {
           "name": "DB_PORT",
-          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/port"
+          "value": "${DB_PORT}"
         },
         {
           "name": "DB_NAME",
-          "valueFrom": "arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/${PROJECT}/db/name"
-        },
+          "value": "${DB_NAME}"
+        }
+      ],
+      "secrets": [
         {
           "name": "DB_USER",
           "valueFrom": "${DB_SECRET_ARN}:username::"
