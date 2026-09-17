@@ -11,6 +11,7 @@ def _int(name: str, default: int) -> int:
     raw = os.environ.get(name)
     return int(raw) if raw else default
 
+
 BUCKET = os.environ["S3_BUCKET"]
 
 # Unset only when CloudFront fronts the app and routes /photos/* to S3;
@@ -43,6 +44,7 @@ PORT = _int("PORT", 8080)
 SKIP_DB_BOOTSTRAP = os.environ.get("SKIP_DB_BOOTSTRAP") == "1"
 
 FLASK_SECRET = os.environ.get("FLASK_SECRET") or secrets.token_hex(32)
+
 
 def database_url() -> str:
     """libpq connection string. ECS injects every value from Secrets Manager."""

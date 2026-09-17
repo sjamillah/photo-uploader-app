@@ -25,9 +25,20 @@ def docker(*args: str) -> str:
 @pytest.fixture(scope="module")
 def container():
     cid = docker(
-        "run", "-d", "-p", "8080:8080",
-        "-e", "S3_BUCKET=x", "-e", "DB_HOST=x", "-e", "DB_NAME=x",
-        "-e", "DB_USER=x", "-e", "DB_PASSWORD=x",
+        "run",
+        "-d",
+        "-p",
+        "8080:8080",
+        "-e",
+        "S3_BUCKET=x",
+        "-e",
+        "DB_HOST=x",
+        "-e",
+        "DB_NAME=x",
+        "-e",
+        "DB_USER=x",
+        "-e",
+        "DB_PASSWORD=x",
         IMAGE,
     )
     try:
