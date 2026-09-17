@@ -28,7 +28,7 @@
         },
         {
           "name": "CLOUDFRONT_DOMAIN",
-          "value": "d291e8uwonpxht.cloudfront.net"
+          "value": "djylb8uzyr0j1.cloudfront.net"
         }
       ],
       "environmentFiles": [],
@@ -42,23 +42,23 @@
       "secrets": [
         {
           "name": "DB_HOST",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:host::"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-HWnIl4:host::"
         },
         {
           "name": "DB_PORT",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:port::"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-HWnIl4:port::"
         },
         {
           "name": "DB_NAME",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:dbname::"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-HWnIl4:dbname::"
         },
         {
           "name": "DB_USER",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:username::"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-HWnIl4:username::"
         },
         {
           "name": "DB_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-5lyNXe:password::"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:697863031884:secret:photo-app/db-HWnIl4:password::"
         }
       ],
       "stopTimeout": 45,
@@ -82,10 +82,10 @@
           "CMD-SHELL",
           "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3).status==200 else 1)\""
         ],
-        "interval": 5,
-        "timeout": 3,
-        "retries": 2,
-        "startPeriod": 5
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
       },
       "systemControls": [],
       "credentialSpecs": []
