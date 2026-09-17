@@ -15,7 +15,7 @@ ACCEPTED_FORMATS = ("JPEG", "PNG", "WEBP", "GIF")
 
 
 class InvalidImage(Exception):
-    """Carries a message that is safe to show the person who uploaded."""
+    """Carries a message that is safe to show the person who uploaded..."""
 
 
 @dataclass(frozen=True)
