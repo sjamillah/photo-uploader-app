@@ -6,6 +6,7 @@ Nothing else reads os.environ, so every default is visible in one place.
 import os
 import secrets
 
+
 def _int(name: str, default: int) -> int:
     raw = os.environ.get(name)
     return int(raw) if raw else default
